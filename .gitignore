@@ -204,3 +204,6 @@ FakesAssemblies/
 
 # Generated typescript files
 *.ts
+
+# Visual Studio Code files
+.vscode
