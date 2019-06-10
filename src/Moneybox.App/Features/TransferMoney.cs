@@ -1,4 +1,5 @@
 ﻿using Moneybox.App.DataAccess;
+using Moneybox.App.Validation;
 using System;
 
 namespace Moneybox.App.Features
@@ -17,14 +18,25 @@ namespace Moneybox.App.Features
             var from = this.accountRepository.GetAccountById(fromAccountId);
             var to = this.accountRepository.GetAccountById(toAccountId);
 
-            if (from.CanWithdrawAmount(amount) && to.CanPayInAmount(amount))
+            // Both the withdrawal and the pay in action need to be validated
+            // before any action can be taken against either account.
+            var withdrawalValidation = from.CanWithdrawAmount(amount);
+            if (!withdrawalValidation.Success)
             {
-                from.WithdrawAmount(amount);
-                to.PayInAmount(amount);
-
-                this.accountRepository.Update(from);
-                this.accountRepository.Update(to);
+                throw new InvalidOperationException(withdrawalValidation.Reason);
             }
+
+            var payInValidation = to.CanPayInAmount(amount);
+            if (!payInValidation.Success)
+            {
+                throw new InvalidOperationException(payInValidation.Reason);
+            }
+
+            from.WithdrawAmount(amount);
+            to.PayInAmount(amount);
+
+            this.accountRepository.Update(from);
+            this.accountRepository.Update(to);
         }
     }
 }

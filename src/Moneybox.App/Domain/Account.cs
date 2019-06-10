@@ -1,4 +1,5 @@
 ﻿using System;
+using Moneybox.App.Validation;
 
 namespace Moneybox.App
 {
@@ -7,8 +8,9 @@ namespace Moneybox.App
         // These should come from config but I'm assuming for this exercise it's
         // ok to leave these as private constants.
         private const decimal PayInLimit = 4000m;
+        private const decimal MinimumAllowedBalance = 0m;
         private const decimal LowBalanceThreshold = 500m;
-        private const decimal ApproachingPayInLimitThreshold = 500m;
+        private const decimal PayInLimitDifferenceThreshold = 500m;
 
         // I have made this class immutable so that it is protected from outside changes.
         // In doing so I'm assuming that the account repository can create account objects
@@ -32,47 +34,68 @@ namespace Moneybox.App
 
         public decimal PaidIn { get; private set; }
 
-        public bool CanWithdrawAmount(decimal amount)
+        public ValidationResult CanWithdrawAmount(decimal amount)
         {
-            return amount <= Balance;
+            if (amount < 0m)
+            {
+                return new ValidationFailed("Amount must be greater than or equal to zero");
+            }
+
+            if (Balance - amount < MinimumAllowedBalance)
+            {
+                return new ValidationFailed("Insufficient funds to make transfer");
+            }
+
+            return new ValidationSuccess();
+        }
+
+        public ValidationResult CanPayInAmount(decimal amount)
+        {
+            if (amount < 0m)
+            {
+                return new ValidationFailed("Amount must be greater than or equal to zero");
+            }
+
+            if (PaidIn + amount <= PayInLimit)
+            {
+                return new ValidationFailed("Account pay in limit reached");
+            }
+
+            return new ValidationSuccess();
         }
 
         public void WithdrawAmount(decimal amount)
         {
-            var fromBalance = Balance - amount;
-            if (fromBalance < 0m)
+            var validation = CanWithdrawAmount(amount);
+            if (!validation.Success)
             {
-                throw new InvalidOperationException("Insufficient funds to make transfer");
-            }
-            else if (fromBalance < LowBalanceThreshold)
-            {
-                User.NotifyFundsLow();
+                throw new InvalidOperationException(validation.Reason);
             }
 
             Balance -= amount;
             Withdrawn -= amount;
-        }
 
-        public bool CanPayInAmount(decimal amount)
-        {
-            return PaidIn + amount <= PayInLimit;
+            if (Balance < LowBalanceThreshold)
+            {
+                User.NotifyFundsLow();
+            }
         }
 
         public void PayInAmount(decimal amount)
         {
-            var paidIn = PaidIn + amount;
-            if (paidIn > PayInLimit)
+            var validation = CanPayInAmount(amount);
+            if (!validation.Success)
             {
-                throw new InvalidOperationException("Account pay in limit reached");
-            }
-
-            if (PayInLimit - paidIn < ApproachingPayInLimitThreshold)
-            {
-                User.NotifyApproachingPayInLimit();
+                throw new InvalidOperationException(validation.Reason);
             }
 
             Balance += amount;
             PaidIn += amount;
+
+            if (PayInLimit - PaidIn < PayInLimitDifferenceThreshold)
+            {
+                User.NotifyApproachingPayInLimit();
+            }
         }
     }
 }
