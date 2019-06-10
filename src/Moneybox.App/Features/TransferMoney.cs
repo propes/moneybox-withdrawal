@@ -18,7 +18,7 @@ namespace Moneybox.App.Features
             var from = this.accountRepository.GetAccountById(fromAccountId);
             var to = this.accountRepository.GetAccountById(toAccountId);
 
-            // Both the withdrawal and the pay in action need to be validated
+            // Both the withdrawal and the pay-in action need to be validated
             // before any action can be taken against either account.
             var withdrawalValidation = from.CanWithdrawAmount(amount);
             if (!withdrawalValidation.Success)

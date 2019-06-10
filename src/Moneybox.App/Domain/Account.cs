@@ -7,10 +7,10 @@ namespace Moneybox.App
     {
         // These should come from config but I'm assuming for this exercise it's
         // ok to leave these as private constants.
-        private const decimal PayInLimit = 4000m;
-        private const decimal MinimumAllowedBalance = 0m;
-        private const decimal LowBalanceThreshold = 500m;
-        private const decimal PayInLimitDifferenceThreshold = 500m;
+        public const decimal PayInLimit = 4000m;
+        public const decimal MinimumAllowedBalance = 0m;
+        public const decimal LowBalanceThreshold = 500m;
+        public const decimal PayInLimitDifferenceThreshold = 500m;
 
         // I have made this class immutable so that it is protected from outside changes.
         // In doing so I'm assuming that the account repository can create account objects
@@ -56,7 +56,7 @@ namespace Moneybox.App
                 return new ValidationFailed("Amount must be greater than or equal to zero");
             }
 
-            if (PaidIn + amount <= PayInLimit)
+            if (PaidIn + amount > PayInLimit)
             {
                 return new ValidationFailed("Account pay in limit reached");
             }
